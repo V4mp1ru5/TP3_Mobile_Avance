@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "529362657289",
+    "project_id": "tp3-mobile-avance",
+    "storage_bucket": "tp3-mobile-avance.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:529362657289:android:31d668f21e92ba4c8b98d8",
+        "android_client_info": {
+          "package_name": "com.deadinside.tp3"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDX8-ju-fuj9-9H_W196oZh28rr4zAr0Cc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
