@@ -83,4 +83,5 @@ class DefaultFirebaseOptions {
     authDomain: 'tp3-mobile-avance.firebaseapp.com',
     storageBucket: 'tp3-mobile-avance.appspot.com',
   );
+
 }
