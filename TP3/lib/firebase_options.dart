@@ -63,6 +63,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '529362657289',
     projectId: 'tp3-mobile-avance',
     storageBucket: 'tp3-mobile-avance.appspot.com',
+    iosClientId: '529362657289-0m83ernf4ba1v879n0j9i3d5t2p28csr.apps.googleusercontent.com',
     iosBundleId: 'com.deadinside.tp3',
   );
 
@@ -72,6 +73,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '529362657289',
     projectId: 'tp3-mobile-avance',
     storageBucket: 'tp3-mobile-avance.appspot.com',
+    iosClientId: '529362657289-0m83ernf4ba1v879n0j9i3d5t2p28csr.apps.googleusercontent.com',
     iosBundleId: 'com.deadinside.tp3',
   );
 

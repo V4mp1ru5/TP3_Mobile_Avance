@@ -12,7 +12,12 @@
           "package_name": "com.deadinside.tp3"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "529362657289-ujv1d5r9d5gvibiqr4g1al5mft190q2c.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDX8-ju-fuj9-9H_W196oZh28rr4zAr0Cc"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "529362657289-ujv1d5r9d5gvibiqr4g1al5mft190q2c.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "529362657289-0m83ernf4ba1v879n0j9i3d5t2p28csr.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.deadinside.tp3"
+              }
+            }
+          ]
         }
       }
     }
