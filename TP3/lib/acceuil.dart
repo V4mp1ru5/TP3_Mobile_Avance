@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:tp3/transfert.dart';
 
+import 'consultation.dart';
 import 'création.dart';
 import 'generated/l10n.dart';
 import 'main.dart';
@@ -31,24 +32,24 @@ class _AcceuilState extends State<Acceuil> {
     getTasks();
   }
 
-  List<Task> tasks = [];
+  List<SpecialUlrichTask> tasks = [];
 
-  CollectionReference<Task> getTasksCollection() {
+  CollectionReference<SpecialUlrichTask> getTasksCollection() {
     return FirebaseFirestore.instance
         .collection('Users')
         .doc(FirebaseAuth.instance.currentUser!.uid)
         .collection('Tasks')
-        .withConverter<Task>(
-        fromFirestore: (doc,_) => Task.fromJson(doc.data()!),
+        .withConverter<SpecialUlrichTask>(
+        fromFirestore: (doc,_) => SpecialUlrichTask.fromJson(doc.data()!),
         toFirestore: (task, _) => task.toJson()
     );
   }
 
   void getTasks() async {
-    QuerySnapshot<Task> tasksdocs = await getTasksCollection().get();
-    List<Task> currentTasks = tasksdocs.docs.map(
+    QuerySnapshot<SpecialUlrichTask> tasksdocs = await getTasksCollection().get();
+    List<SpecialUlrichTask> currentTasks = tasksdocs.docs.map(
             (doc) {
-          Task t = doc.data();
+          SpecialUlrichTask t = doc.data();
           t.id = doc.id;
           t.percentageTimePassed = ((DateTime.now().millisecondsSinceEpoch - t.creationDate.millisecondsSinceEpoch)/(t.deadline.millisecondsSinceEpoch - t.creationDate.millisecondsSinceEpoch)) * 100;
           return t;
@@ -78,22 +79,22 @@ class _AcceuilState extends State<Acceuil> {
           itemBuilder: (BuildContext context, int index) {
             return ListTile(
               onTap: (){
-                //Navigator.push(
-                //  context,
-                //  MaterialPageRoute(
-                //    builder: (context) => Consultation(
-                //      id: homeItemResponses[index].id,
-                //    ),
-                //  ),
-                //);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => Consultation(
+                      id: tasks[index].id,
+                    ),
+                  ),
+                );
 
               },
-              title: Text('${S.of(context).tName} ${tasks[index].name}\n${S.of(context).pDone} ${tasks[index].percentageDone}\n${S.of(context).tPassed} ${tasks[index].percentageTimePassed}%\n${S.of(context).deadline} ${tasks[index].deadline}', style: const TextStyle(fontWeight: FontWeight.w700)),
-              //leading: CachedNetworkImage(
-              //  imageUrl: "http://10.0.2.2:8080/file/${tasks[index].photoId}?width=40",
-              //  placeholder: (context, url) => CircularProgressIndicator(),
-              //  errorWidget: (context, url, error) => Icon(Icons.supervised_user_circle),
-              //),
+              title: Text('${S.of(context).tName} ${tasks[index].name}\n${S.of(context).pDone} ${tasks[index].percentageDone}\n${S.of(context).tPassed} ${(tasks[index].percentageTimePassed).toStringAsFixed(2)}%\n${S.of(context).deadline} ${tasks[index].deadline}', style: const TextStyle(fontWeight: FontWeight.w700)),
+              leading: CachedNetworkImage(
+                imageUrl: tasks[index].imageUrl,
+                placeholder: (context, url) => CircularProgressIndicator(),
+                errorWidget: (context, url, error) => Icon(Icons.supervised_user_circle),
+              ),
             );
           },
           separatorBuilder: (BuildContext context, int index) => const Divider(),

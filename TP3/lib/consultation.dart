@@ -1,21 +1,25 @@
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:flutter/material.dart';
-import 'package:tp1_mobile_avance/lib_http.dart';
-import 'package:tp1_mobile_avance/transfert.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:tp3/transfert.dart';
 
 import 'acceuil.dart';
-import 'connexion.dart';
 import 'création.dart';
 import 'generated/l10n.dart';
+import 'main.dart';
 
 
 class Consultation extends StatefulWidget {
 
   // l'objet a affiché, on le met final ce qui garantit une assignation
-  final int id;
+  final String id;
 
 
   const Consultation({Key? key, required this.id}) : super(key: key);
@@ -32,15 +36,16 @@ class _ConsultationState extends State<Consultation> {
     getTask();
   }
 
-  TaskDetailPhotoResponse currentTask = TaskDetailPhotoResponse();
+  SpecialUlrichTask currentTask = SpecialUlrichTask();
+  SpecialUlrichTask updatedTask = SpecialUlrichTask();
   int _currentSliderValue = 0;
 
   String imagePath = "";
   XFile? pickedImage;
 
-  void getNetworkImage(int? id) async{
-    imagePath = "http://10.0.2.2:8080/file/${currentTask.photoId}";
-      setState(() {});
+  void getNetworkImage() async{
+    imagePath = currentTask.imageUrl;
+    setState(() {});
   }
 
   void getImage() async {
@@ -55,22 +60,21 @@ class _ConsultationState extends State<Consultation> {
       "file": await MultipartFile.fromFile(pickedImage!.path, filename: pickedImage!.name),
       "taskID": currentTask.id
     });
-
-    Dio dio = Dio();
-    await dio.post("http://10.0.2.2:8080/file", data: formData);
   }
 
   void getTask() async {
     try {
-      var response = await task(widget.id);
+      DocumentSnapshot<SpecialUlrichTask> taskdoc = await getTasksCollection().doc(widget.id).get();
+      SpecialUlrichTask t = taskdoc.data()!;
+      t.percentageTimePassed = ((DateTime.now().millisecondsSinceEpoch - t.creationDate.millisecondsSinceEpoch)/(t.deadline.millisecondsSinceEpoch - t.creationDate.millisecondsSinceEpoch)) * 100;
       setState(() {
-        currentTask = response;
-        _currentSliderValue = response.percentageDone;
-        if(currentTask.photoId != 0) {
-          getNetworkImage(currentTask.photoId);
+        currentTask = t;
+        _currentSliderValue = t.percentageDone;
+
+        if(currentTask.imageUrl != '') {
+          getNetworkImage();
         }
       });
-      print(response);
     }
     catch (e) {
       print(e);
@@ -80,9 +84,29 @@ class _ConsultationState extends State<Consultation> {
     }
   }
 
-  void getTaskUpdate(int value) async {
+  CollectionReference<SpecialUlrichTask> getTasksCollection() {
+    return FirebaseFirestore.instance
+        .collection('Users')
+        .doc(FirebaseAuth.instance.currentUser!.uid)
+        .collection('Tasks')
+        .withConverter<SpecialUlrichTask>(
+        fromFirestore: (doc,_) => SpecialUlrichTask.fromJson(doc.data()!),
+        toFirestore: (task, _) => task.toJson()
+    );
+  }
+
+  void TaskUpdate(int value) async {
     try {
-      await taskUpdate(widget.id, value);
+      updatedTask = currentTask;
+      updatedTask.percentageDone = value;
+      if(imagePath != "" && !imagePath.startsWith("http")){
+        File file = File(imagePath);
+        await FirebaseStorage.instance.ref('${widget.id}.jpg').putFile(file);
+        String imageURL = await FirebaseStorage.instance.ref('${widget.id}.jpg').getDownloadURL();
+
+        updatedTask.imageUrl = imageURL;
+      }
+      getTasksCollection().doc(widget.id).set(updatedTask);
       Navigator.popUntil(context, (route) => false);
       Navigator.push(
         context,
@@ -103,26 +127,13 @@ class _ConsultationState extends State<Consultation> {
   }
 
   void updateTask(int value){
-    getTaskUpdate(value);
-    if(imagePath != "" && !imagePath.startsWith("http")){
-      sendImage();
-    }
-  }
-
-  void postSignout() async {
-    try {
-      await signout();
-    }
-    catch (e) {
-      print(e);
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(S.of(context).error))
-      );
-    }
+    TaskUpdate(value);
   }
 
   @override
   Widget build(BuildContext context) {
+    String username = FirebaseAuth.instance.currentUser!=null?FirebaseAuth.instance.currentUser!.email!:"";
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
@@ -143,7 +154,7 @@ class _ConsultationState extends State<Consultation> {
               child: Text('${S.of(context).deadline} ${currentTask.deadline}', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500)),
             ),
             SizedBox(
-              child: Text('${S.of(context).tPassed} ${currentTask.percentageTimeSpent}', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500)),
+              child: Text('${S.of(context).tPassed} ${(currentTask.percentageTimePassed).toStringAsFixed(2)}', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500)),
             ),
             SizedBox(
               child: Text('${S.of(context).pDone} ${currentTask.percentageDone}', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500)),
@@ -172,7 +183,7 @@ class _ConsultationState extends State<Consultation> {
                             Text(S.of(context).slectionnerUneImage),
                           ],
                         );
-                      } else if(imagePath.startsWith("http://10.0.2.2:8080/file")){
+                      } else if(imagePath.startsWith("http")){
                         return Image.network(imagePath, width: 200,);
                       }
                       return Image.file(File(imagePath), width: 200);
@@ -206,7 +217,7 @@ class _ConsultationState extends State<Consultation> {
               decoration: const BoxDecoration(
                 color: Colors.deepPurpleAccent,
               ),
-              child: Text(SingletonNom.getUsername(), textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w500, fontSize: 35),),
+              child: Text(username, textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w500, fontSize: 25),),
             ),
             ListTile(
               title: Text(S.of(context).welcome),
@@ -235,8 +246,11 @@ class _ConsultationState extends State<Consultation> {
             ListTile(
               title: Text(S.of(context).disconnect),
 
-              onTap: () {
-                postSignout();
+              onTap: () async {
+                await GoogleSignIn().signOut();
+                await FirebaseAuth.instance.signOut();
+                setState(() {});
+                SingletonNom.setUsername("null");
                 Navigator.popUntil(context, (route) => false);
                 Navigator.push(
                   context,

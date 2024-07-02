@@ -53,39 +53,71 @@ class _MyHomePageState extends State<CreationPage> {
 
   DateTime deadlinePicked = DateTime.now();
 
+  Future<bool> verifyName(String name) async {
+    QuerySnapshot<SpecialUlrichTask> tasksdocs = await getTasksCollection().get();
+    List<SpecialUlrichTask> currentTasks = tasksdocs.docs.map(
+            (doc) {
+          SpecialUlrichTask t = doc.data();
+          t.id = doc.id;
+          t.percentageTimePassed = ((DateTime.now().millisecondsSinceEpoch - t.creationDate.millisecondsSinceEpoch)/(t.deadline.millisecondsSinceEpoch - t.creationDate.millisecondsSinceEpoch)) * 100;
+          return t;
+        }
+    ).toList();
+    List<String> taskNames = currentTasks.map((task) => task.name).toList();
+    return taskNames.contains(name);
+  }
+
   void AddTask() async {
 
 
     try{
-      Task newTask = Task();
-      newTask.deadline = deadlinePicked;
-      newTask.name = myControllerName.value.text;
+      if(myControllerName.value.text.trim() == ''){
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('The task name is empty', style: TextStyle(color: Colors.red),))
+        );
+      }
+      else if(deadlinePicked.millisecondsSinceEpoch < DateTime.now().millisecondsSinceEpoch){
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('The task deadline is invalid', style: TextStyle(color: Colors.red),))
+        );
+      }
+      else if(await verifyName(myControllerName.value.text.trim())) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('This task already existe',
+              style: TextStyle(color: Colors.red),))
+        );
+      }
+      else {
+        SpecialUlrichTask newTask = SpecialUlrichTask();
+        newTask.deadline = deadlinePicked;
+        newTask.name = myControllerName.value.text.trim();
 
-      getTasksCollection().add(newTask);
+        await getTasksCollection().add(newTask);
 
-      Navigator.popUntil(context, (route) => false);
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const Acceuil(name: 'name', id: 2),
-        ),
-      );
+        Navigator.popUntil(context, (route) => false);
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const Acceuil(name: 'name', id: 2),
+          ),
+        );
+      }
     }
     catch (error){
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('error', style: TextStyle(color: Colors.red),))
+          SnackBar(content: Text(S.of(context).error, style: TextStyle(color: Colors.red),))
       );
     }
 
   }
 
-  CollectionReference<Task> getTasksCollection() {
+  CollectionReference<SpecialUlrichTask> getTasksCollection() {
     return FirebaseFirestore.instance
         .collection('Users')
         .doc(FirebaseAuth.instance.currentUser!.uid)
         .collection('Tasks')
-        .withConverter<Task>(
-          fromFirestore: (doc,_) => Task.fromJson(doc.data()!),
+        .withConverter<SpecialUlrichTask>(
+          fromFirestore: (doc,_) => SpecialUlrichTask.fromJson(doc.data()!),
           toFirestore: (task, _) => task.toJson()
         );
   }
