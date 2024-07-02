@@ -1,8 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:tp3/transfert.dart';
 
+import 'création.dart';
 import 'generated/l10n.dart';
 import 'main.dart';
 
@@ -25,12 +28,35 @@ class _AcceuilState extends State<Acceuil> {
   @override
   void initState() {
     super.initState();
-    getHomeItems();
+    getTasks();
   }
 
+  List<Task> tasks = [];
 
-  void getHomeItems() async {
+  CollectionReference<Task> getTasksCollection() {
+    return FirebaseFirestore.instance
+        .collection('Users')
+        .doc(FirebaseAuth.instance.currentUser!.uid)
+        .collection('Tasks')
+        .withConverter<Task>(
+        fromFirestore: (doc,_) => Task.fromJson(doc.data()!),
+        toFirestore: (task, _) => task.toJson()
+    );
+  }
 
+  void getTasks() async {
+    QuerySnapshot<Task> tasksdocs = await getTasksCollection().get();
+    List<Task> currentTasks = tasksdocs.docs.map(
+            (doc) {
+          Task t = doc.data();
+          t.id = doc.id;
+          t.percentageTimePassed = ((DateTime.now().millisecondsSinceEpoch - t.creationDate.millisecondsSinceEpoch)/(t.deadline.millisecondsSinceEpoch - t.creationDate.millisecondsSinceEpoch)) * 100;
+          return t;
+        }
+    ).toList();
+    setState(() {
+      tasks = currentTasks;
+    });
   }
 
 
@@ -48,7 +74,7 @@ class _AcceuilState extends State<Acceuil> {
       body: Center(
         child: ListView.separated(
           padding: const EdgeInsets.all(8),
-          itemCount: 1,
+          itemCount: tasks.length,
           itemBuilder: (BuildContext context, int index) {
             return ListTile(
               onTap: (){
@@ -62,9 +88,9 @@ class _AcceuilState extends State<Acceuil> {
                 //);
 
               },
-              //title: Text('${S.of(context).tName} ${homeItemResponses[index].name}\n${S.of(context).pDone} ${homeItemResponses[index].percentageDone}\n${S.of(context).tPassed} ${homeItemResponses[index].percentageTimeSpent}\n${S.of(context).deadline} ${homeItemResponses[index].deadline}', style: const TextStyle(fontWeight: FontWeight.w700)),
+              title: Text('${S.of(context).tName} ${tasks[index].name}\n${S.of(context).pDone} ${tasks[index].percentageDone}\n${S.of(context).tPassed} ${tasks[index].percentageTimePassed}%\n${S.of(context).deadline} ${tasks[index].deadline}', style: const TextStyle(fontWeight: FontWeight.w700)),
               //leading: CachedNetworkImage(
-              //  imageUrl: "http://10.0.2.2:8080/file/${homeItemResponses[index].photoId}?width=40",
+              //  imageUrl: "http://10.0.2.2:8080/file/${tasks[index].photoId}?width=40",
               //  placeholder: (context, url) => CircularProgressIndicator(),
               //  errorWidget: (context, url, error) => Icon(Icons.supervised_user_circle),
               //),
@@ -75,12 +101,12 @@ class _AcceuilState extends State<Acceuil> {
       ),
       floatingActionButton: FloatingActionButton.extended(
       onPressed: () {
-        //Navigator.push(
-        //  context,
-        //  MaterialPageRoute(
-        //    builder: (context) => const Creation(),
-        //  ),
-        //);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const Creation(),
+          ),
+        );
       },
       label: Text(S.of(context).add),
       icon: const Icon(Icons.add),
@@ -108,13 +134,13 @@ class _AcceuilState extends State<Acceuil> {
             ListTile(
               title: Text(S.of(context).addTask),
               onTap: () {
-                //Navigator.popUntil(context, (route) => false);
-                //Navigator.push(
-                //  context,
-                //  MaterialPageRoute(
-                //    builder: (context) => const Creation(),
-                //  ),
-                //);
+                Navigator.popUntil(context, (route) => false);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const Creation(),
+                  ),
+                );
               },
             ),
             ListTile(
